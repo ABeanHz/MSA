@@ -1,0 +1,354 @@
+---
+title: "Data Mining Summary"
+author: "Alison Bean de Hz"
+date: "2024-10-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Association Analysis 
+
+* Support: Measures how often we find instances of this rule in the data
+* Confidence: Measures what percent of transactions containing A also contain B
+* Lift: Measures how much more likely we are to buy B given that we also buy A than we are to buy B at random
+
+# Bootstrapping
+
+* Bootstrapping is non-parametric procedure. 
+* It does **NOT** assume an underlying distribution. 
+* Uses the data that you currently have to create a sample distribution. 
+  * Nonparametric procedure that can estimate standard error of a statistic, compute confidence intervals for a statistic or perform hypothesis test
+* It just keeps re-sampling from the data that you have, which ultimately gives you a distribution.
+* Use data as the population and re-sample (with replacement-- sampling with replacement allows for duplicates)
+
+# Bonferroni 
+
+## Bonferroni
+
+* If you are doing A LOT of hypothesis testing, then you need to be aware of inflating your Type I errors.
+* The Family-Wise Error Rate (FWER) is the probability of making one or more Type I errors (false positives) when conducting multiple hypothesis tests.
+* The Bonferroni Adjustment simply multiplies p-values by the number of tests you are doing. 
+  * Bonferroni is very stringent
+  * Do not go greater than 1 
+  
+## Alternative to bonferroni
+  
+  * False Discovery Rate (FDR) – controls **rate** of Type 1 errors. This is the expected proportion of “false discoveries” (does NOT control FWER, but does prevent us from finding too many significant tests).
+  * FDR is the expected proportion of false positives (Type I errors) among the total number of rejections (discoveries).
+  
+# Cross-validation
+
+* K-fold: 
+  * Divide your data into k equally-sized samples (folds)
+    * k=10 or k=100 are common.
+    * Depends on time complexity of model and size of the dataset!
+    * For each fold, train the model on all other data, using that fold as a
+validation set
+  * Rule of thumb: AT LEAST 10 observations per input variable in training set.     * Remember that categorical variables each cat counts as a variable. 
+  
+* Leave-One-Out Cross-Validation
+  * n-fold cross validation where n is number of obs.
+  * Use only one observation as the validation-set
+  * Repeat for every observation in the dataset
+  * Can be extremely time consuming! Only use when necessary (very small sample
+sizes)
+
+# Missing values 
+
+* Create a flag to indicate which values are missing and which ones are not (sometimes,
+missingness is informative!!)
+* Numeric: 
+  * Consider how much of the variable is missing (if over 50% need to consider how much
+information this variable is giving).
+  * If you want to keep the variable, you can either: 
+    1. Impute values OR
+    2. bin the variables and create a separate bin for missing values. 
+  * Replacing missing values with a substitute value, typically a guess at what you think the value should have been (can be mean or median or mode of the variable).
+* Categorical:  
+  * You can consider creating a “bin” for missing values (again, if too much is missing, this will be a HUGE bin…how much information is this providing?)
+  
+# Binning variables
+
+* Unsupervised approach - equal width bins (Each bin has the same width in variable
+values -- Each bin has different number of observations)
+* Unsupervised approach - equal depth of bins (ie: percentiles- Each bin has the same number of observations)
+* Supervised approach - Use target variable info to ‘optimally’ bin numeric
+variables for prediction (conditional trees, classification problems)
+
+# Association Analysis - Unsupervised Approach 
+
+* Support - Measures how often we find instances of this rule in the data
+* Confidence - Measures what percent of transactions containing A also contain B
+* Lift - Measures how much more likely we are to buy B given that we also buy A than we are to buy B at random.
+
+
+# Classification and Regression Trees (CART)
+
+* A decision tree is a machine learning algorithm 
+* Nodes: 
+  * Root node - top node (contains all observations)
+  * Parent node - a node that splits
+  * Child node  - the node(s) resulting from a split in a parent
+  * Leaves or terminal nodes - are the last part of the tree and this is the node that will give you the prediction. The final node predicts. 
+* CARTS
+  * Binary splits 
+  * Classification Trees: Used when the target variable is categorical. The algorithm partitions the data to predict classes (e.g., predicting whether an email is spam or not). Goal: Reduce impurities
+  * Regression Trees: Used when the target variable is continuous. The algorithm predicts a numeric value (e.g., predicting house prices).Goal: To reduce the sum of squared errors (SSE)
+* Basics of a decision tree
+  * Decision trees are interpretable - basically rules to understand the data
+  * Allow for nonlinear associations
+  * Allow for interactions -- by definition these are interactions
+  * Can handle missing values without cleaning them 
+  * They are greedy algorithms because once something is classified it stays there. 
+    * The algorithm works by choosing the best immediate solution (the "greedy choice") at each stage without considering the bigger picture.
+
+<img src="C:/Users/agbea/OneDrive/MSA_folder/Fall/Fall2/Data_Mining/Decision_Trees.png" width="800"/>
+
+## Classification Trees: 
+
+* Goals of decision trees:A tree is built by recursively partitioning the training data into successively purer subsets.
+  * The purity of a node is looking at how “homogeneous” the node is with respect to the target variable. 
+* Most trees will use binary splits (only allow for two options each time a variable is chosen)
+  * Example of marital status: 3 marriage status - Single, married, other -- 3 possible splits 1. Single vs. married & other, 2. Married vs. Single & Other, 3. Other vs. Single & married
+  * For ordinal and quantitative variables, need to find the best value to split on. If the variable is continuous, it will find the best variable to split on. 
+  * Missing values can be placed into one of the bins. 
+
+* Determining the best split (all focus on the purity of the node)
+  * The most impure node is a 50/50 split 
+  * Measures of impurity: 
+    1. **Entropy**: ntropy measures the disorder or uncertainty in a dataset.
+      * High entropy: Lots of different classes mixed together (disordered).
+      * Low entropy: Data is mostly one class (ordered).
+    2. **Gini**: Gini impurity measures how often a randomly chosen element from the dataset would be incorrectly classified if it were randomly labeled according to the distribution of labels in the dataset.
+  * Entropy: Given the probability of "Yes" in a given node 
+  * Gini: 1 - sum of the probabilities squared
+* We want to measure our gain as the amount of impurity we are decreasing.
+
+    
+* Advantages of using a decision tree model instead of a logistic regression: 
+  * A decision tree can handle observations with missing values.
+  * A decision tree model is easy to explain to a customer.
+  * A decision tree can provide the user with simple rules that help them make a decision on a particular observation.
+  
+* Pruning a tree: 
+  * Simply remove leaves/nodes in a bottom-up fashion, cutting splits with lowest gain first, while optimizing performance using cross-validation
+  * You can either grow a tree to its full length (IF your data is large, this might take awhile!)
+  * And/or specify some controls before creating the tree (to make sure it does not grow too big)
+  * Even if you add some controls, you can still prune more after you get the output
+  * Prepruning is stopping the tree-building process early based on thresholds like minimum Gain or minimum number of observations in leaves.
+  * Occam's Razor (law of parsimony) suggests that simpler models are preferred, and pruning helps achieve this by removing unnecessary complexity.
+    * Prevent overfitting
+    * Reduce complexity
+    * Balance Between Fit and Simplicity
+    
+## Regression trees
+
+* On continuous data 
+* Tends to go deeper than classification trees, and pre-pruning is very important. 
+* The average sum of squares (SSE) in each leaf is used, aiming to reduce the variance within each node
+* Goal is minimize the sum of squared errors (SSE)
+  * Can use MAEs and MAPEs
+* The average of the observations in the node, which becomes the predicted value for that node
+
+## Advantages of Trees
+
+* Explainability
+* Can handle missing values
+* Can be used for variable selection
+* Great for ensembles
+  * (basis for Random Forest and Gradient Boosting!)
+* No assumptions to verify
+* Generally immune to scale of input variables/standardization
+* Generally immune to the effect of outliers or high leverage observations
+* Can handle correlated inputs
+  
+## Disadvantages of Trees
+
+* Simplistic Regression/Decision Surface (not good estimation when only a few predictor
+variables and continuous response)
+* All variables are forced to interact
+  * Only the top split acts independently
+  * Inefficient Greedy algorithm
+  * Cannot return the globally optimal tree
+* Can be unstable (sensitive to small changes in input) – both when training the model
+AND when making predictions
+
+## Other 
+
+* Model Reliance - Expected loss under noise / Expected loss original model
+  * Calculates the ratio of expected loss when “noise” is introduced versus the expected
+loss of the original data set
+  * Model Reliance is a model agnostic procedure
+* CART vs. Conditional Trees: Both CART and conditional trees are useful for decision tree modeling, but they serve different purposes and can be preferred in different contexts. CART is more flexible for both regression and classification tasks, while conditional trees provide a more statistically rigorous framework for classification problems, particularly in situations where interpretability and control over variable selection are crucial
+
+# Clustering 
+
+* Clustering is unsupervised 
+* Clustering is segmentation
+* Hard vs. fuzzy clustering 
+  * Hard: objects belong to only one cluster (K-means, Hierachical, DBSCAN)
+  * Soft: objects belong to more than one cluster (usually probability based)
+* Hierarchical vs. Flat: 
+  * **Hierarchical**: clusters form a tree so you can visually see which clusters are most similar to each other.
+    * Agglomerative: points start out as individual clusters, and they are combined
+until everything is in one cluster. 
+    * Divisive: All points start in same cluster and at each step a cluster is divided into two clusters. (ex: DIANA)
+  * **Flat**: Clusters are created according to some other process, usually iteratively updating cluster assignments (usually specify the number of clusters apriori)
+    * Exampls of flat clustering is k-means and DBSCAN.
+
+## Data prep
+
+* Either impute missing data or remove variables with large amounts of missing data
+* Create dummies for categorical data
+* Consider transformations if the continuous data has outliers or is heavily skewed. 
+
+## K-means clustering
+
+* K-means clustering is one of the most common kinds of clustering
+* K-means clustering tries to minimize the sum of squared distances from each point to its <u>cluster centroid </u>. 
+* The process: 
+  * K-means starts with K "seed points" -- seed points in k-means clustering refer to the initial starting points that act as the centroids for the clusters.
+    * The number of seed points is exactly equal to the number of clusters you specify,𝐾
+    * Each seed point represents a starting guess for the center of one of the 𝐾clusters.
+  * Assign each data point to the closest seed point.
+  * The seed point then represents a cluster of data
+  * Reset seed points to be the centroids of the cluster
+  * Repeat steps 2-4 updating the cluster centroids until they do not change.
+  * SSE continues to decrease as you increase the number of K-clusters. You want to find the point where there is diminishing returns.
+* **Disadvantages of K-means clustering**
+  * Depends on the initial seed count 
+  * Can be sensitive to outliers
+  * Have to input the number of clusters
+  * Difficulty detecting non-spherical clusters 
+* **Advantages of K-means clustering**
+  * Modest time/storage requirements.
+  * Shown you can terminate method after small number of iterations with good results.
+  * Good for wide variety of data types
+* Assessing how many clusters: 
+  1. Look at a cluster plot and see how much of the explainable variation is retained
+  2. Look at an elbow plot
+  3. Look at a silhouette plot (Should be between 0 and 1, and you want the number closest to 1)
+  4. Gap Statistic
+    * The gap statistic compares the total intracluster variation for different values of k with their expected values under null reference distribution of the data (i.e. a distribution with no obvious clustering)
+    * The reference data set is generated by sampling points uniformly from the minimum to the maximum value for each variable. We then choose B bootstrap samples from this reference distribution to compare to the data (compare using intracluster variation).
+    
+## Hierarchical Clustering 
+
+* Differences from other methods: 
+  * K-means is partition based, and hierarchical is tree-based. 
+  * Decision trees are supervised and used for predictions, Hierarchical clusters is unsupervised.
+  
+<img src="C:/Users/agbea/OneDrive/MSA_folder/Fall/Fall2/Data_Mining/Cluster vs. Decision Tree.png" width="800"/>
+
+* Hierarchical: 
+  * Builds a hierarchy (dendrogram) of clusters, where clusters are nested within each other.
+  * Does not require specifying the number of clusters initially.
+  * Can be agglomerative (bottom-up) or divisive (top-down).
+    * Agglomerative approach: Starts with each data point as its own cluster and merges the closest clusters step by step until all points are in a single cluster.
+    * Divisive approach: Starts with all data points in a single cluster and splits them into smaller clusters recursively.
+  *   Computationally expensive, especially for large datasets, because it calculates distances between every pair of data points at each step.
+  
+### Agglomerative 
+
+* Different types of distances, but **Euclidean** is the most common: 
+\[
+d(P, Q) = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}
+\]
+
+* **Mahattan** distance:
+\[
+d(P, Q) = |x_2 - x_1| + |y_2 - y_1|
+\]
+
+* Agglomerative: Each point starts as its own cluster (start with n clusters)
+  1. Calculate the distance between each point (using the specified distance measure)
+  2. Choose the two points that are the closest and form a cluster (now there are n-1
+  clusters)
+  3. Calculate distance between all single points and all clustered points
+  4. Find smallest distance and combine to form a cluster
+  
+* How do we determine which points/clusters are closet to each other? **Linkages** 
+  * Different type of linkages
+    * Single Linkage (nearest neighbor): Distance between the <u>closest points</u> in the clusters.
+    * Complete Linkage (farthest neighbor): Distance between the  <u>farthest points </u> in the clusters.
+    * Centroid Linkage: Distance between the centroids (means) of each cluster.
+    * Average Linkage: Average distance between all points in the clusters.
+    * Ward’s Method: Minimize SSE.
+
+* Distance vs. Linkages: 
+  * Distance metrics are mathematical functions used to measure the similarity or dissimilarity between individual data points (observations) in the dataset.
+  * They guide the merging process of clusters by providing a way to measure how close or far apart different clusters are based on their members.
+  
+<img src="C:/Users/agbea/OneDrive/MSA_folder/Fall/Fall2/Data_Mining/Distance vs. Linkage.png" width="800"/>
+
+* **Disadvantages of hierarchical clustering**: 
+  * Computationally expensive.
+  * Lacks global objective function (it's a greedy algorithm): only makes decision based on local criteria.
+  * Merging decisions are final. Once a point is assigned to a cluster, it stays there.
+  * Poor performance on noisy data.
+* **Advantages of hierachical clustering**: 
+  * Creates hierarchy (dendrogram) that can help choose the number of clusters and examine how those clusters relate to each other.
+  * Do NOT need to know number of clusters apriori
+  
+  
+## DBSCAN Cluster 
+
+* Good for nested clusters, good for noisy data or data with outliers
+* Density-based spatial clustering of applications with noise
+* Groups together points that are close to each other based on a distance measure, a
+minimum number of points (“neighbors”) and a “neighborhood" about each point
+* Points not “near” other points will be deemed an “outlier”
+* A “cluster” of points must have a minimum number of points around it to be considered a cluster
+* Three measures for DBSCAN:
+  1. Epsilon (ε) - The radius of the neighborhood around each point.
+  2. Distance measure - The metric used to calculate distance.
+  3. Minimum number of points - The minimum number of points required to form a cluster.
+
+# KNN
+
+* K-Nearest Neighbor (KNN)
+  * KNN is used for classification and regression
+  * Use the information from those ‘neighbors’ to classify/predict the new observation
+  * Classify and predict based on nearest neighbors
+  * Algorithm uses a majority rules way of deciding how to classify so K being an odd number is good. 
+  * Nearness is often the Euclidean distance for R and Python.
+  * Determining Ks, 
+    * Smaller K can tend to overfit
+    * Larger K can be underfitting 
+    * Common to choose k: \( k = \sqrt{n} \)
+* **Advantages of KNN** 
+  * Easy to explain, intuitive, understandable
+  * Applicable to any type of data
+  * Makes no assumptions about the underlying distribution of the data (nonparametric).
+  * Large/representative training set is only assumption
+* **Disadvantages of kNN**
+  * Computationally expensive in classification phase
+  * Requires storage for the training set
+  * Results dependent on choice of distance function, combination function, and number of
+neighbors, k.
+  * KNN is susceptible to noise
+  * Does not produce a model. Does not help us understand how the features are related to the classes. 
+  
+  
+# Multidimentional Scaling 
+
+* MDS vs. PCA     
+  * Both are reducing dimentionality
+  * MDS is like squishing and PCA is like projecting. 
+  * PCA is more focused on the dimensions themselves (wants to maximize explained variance) where MDS is more focused on relations among the scaled objects
+  * PCA is better for modeling or clustering, MDS is better for visualizing and creating indexes
+<img src="C:/Users/agbea/OneDrive/MSA_folder/Fall/Fall2/Data_Mining/MDS vs. PCA.png" width="800"/>
+
+
+* PCA 
+  * Each “variable” (i.e. Principle Component) is independent of the others (we say orthogonal)
+  * Can see how much variance is explained by each variable (calculate the percent of variance explained by looking at the percent within each variable)
+  * Explained variance is a goodness of fit for PCA. 
+  
+* MDS 
+  * To perform MDS, you need to give the algorithm a dissimilarity matrix (or distance matrix)
+  * Stress should ideally be lower than 10%. The goodness of fit measure should ideally be greater than 80%.
+  * Stress quantifies the discrepancy between the distances in the original high-dimensional space and the distances in the low-dimensional MDS space. The lower the stress value, the better the fit.
