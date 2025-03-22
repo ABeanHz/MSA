@@ -1,0 +1,449 @@
+---
+title: "Timeseries Summary"
+author: "Alison Bean de Hz"
+date: "2024-09-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# General comments 
+
+* Always plot your data 
+* There are timeseries packages in R that make timeseries calculations doable (fpp3)
+* Timeseries can have trend, season, and cycle (cycle is different from season)
+
+* Statistical forecasting = Signal + Noise 
+  * Signal - explained variation (trend, season, cycle)
+  * Noise - unexplained variation (error)
+  * Forecasts extrapolate signal portion of model, confidence intervals account for the uncertainty (error). 
+
+# Decomposition 
+
+* You decompose when you have trend AND season/cycle. If it is just trend, then you don't need to decompose. 
+* Decompose into 3 parts 
+  * Trend
+  * Season/Cycle 
+  * Error 
+  
+## Types of Decomposition
+
+* Additive Decomposition: 
+
+$$Y_{t} = T_{t} + S_{t} + R_{t}$$ 
+ 
+* Multiplicative Decomposition: 
+
+$$Y_{t} = T_{t} * S_{t} * R_{t}$$ 
+
+* You can also take the log as a transformation 
+
+$$log(Y_{t}) = log(T_{t}) + log(S_{t}) + log(R_{t})$$ 
+
+* Distinguishing additive vs. multiplicative decomposition: 
+  * Additive – magnitude of variation around trend / cycle remains constant.
+  * Multiplicative - magnitude of the variation around trend / cycle proportionally changes.
+
+
+* Seasonally Adjusted Data (Additive):
+
+$$Y_{t} - S_{t} = T_{t} + R_{t}$$ 
+
+## Three most common decomposition techniques
+
+1. Classical Decomposition: 
+  - Trend – Uses Moving / Rolling Average Smoothing
+  - Seasonal – **Average De-trended Values Across Seasons (assumed to CONSTANT throughout series**)
+2. X-11 ARIMA Decomposition: 
+  - Trend – Uses Moving / Rolling Average Smoothing
+  - Seasonal – Uses Moving / Rolling Average Smoothing
+  - Iteratively Repeats Above Methods and **ARIMA Modeling**
+  - Can handle outliers
+  - Automatic (will choose best...either additive or multiplicative, etc).
+3. STL (Seasonal and Trend using LOESS estimation) Decomposition
+  - Default of STL Function in R
+  - Uses LOcal regrESSion Techniques to Estimate Trend and Seasonality
+  - Allows Changing Effects for Trend and Season
+  - Adapted to handle outliers
+
+## More about decomposition
+
+* You MUST have more than one observation per year in order to “decompose” a data set
+* Decomposition will NOT tell you if you have seasonal data (nor the length of seasonality)
+
+## Imputing missing data 
+
+* Mean not great when dealing with timeseries data 
+* Last observation carried forward
+* Splines to impute missing data 
+* Seasonally decomposed data to impute missing data (Seadec)
+
+# Evaluating Forecasts
+
+* Accuracy is a metric that varies by industry.
+* Good forecasts: 
+  1. Highly correlated with the original timeseries
+  2. Exhibit small prediction forecast errors
+  3. Capture important features of the original timeseries
+* **Goodness of fit** - A diagnostic statistic calculated using the same sample that was used to build the model (AIC, AICC, BIC, etc.)
+* **Accuracy** - A diagnostic statistic calculated using a hold out sample
+that was not used in the building of the model (MAE, MAPE, etc.)
+
+## Hold Out samples
+* A hold out sample in time series analysis is different than cross-sectional analysis.
+* The hold-out sample is always at the end of the time series, and doesn’t typically go beyond 25% of the data.
+* IF YOU HAVE A SEASONAL TIME SERIES - Ideally, an entire season should be captured in a hold-out sample.
+
+## Model Diagnostic Statistics
+
+
+1. **Mean Absolute Percent Error (MAPE):**
+$$
+MAPE = \frac{1}{n} \sum_{t=1}^{n} \left| \frac{Y_t - \hat{Y}_t}{Y_t} \right|
+$$
+
+* Challenges: 
+  * Overweight of Over-predictions
+  * When the actual value == 0, then it is divisible by 0.
+  
+2. **Mean Absolute Error (MAE):**
+
+$$
+MAE = \frac{1}{n} \sum_{t=1}^{n} \left| Y_t - \hat{Y}_t \right|
+$$
+
+* Challenges: 
+  * Not scale invariant
+  
+3. **Root Mean Square Error (RMSE):**
+
+$$
+RMSE = \sqrt{\frac{1}{n} \sum_{t=1}^{n} (Y_t - \hat{Y}_t)^2}
+$$
+
+* Challenges: 
+  * Not scale invariant
+  * Overweight of Over-predictions
+  
+4. **Symmetric Mean Absolute Percent Error (sMAPE):**
+
+$$
+sMAPE = \frac{1}{n} \sum_{t=1}^{n} \frac{|Y_t - \hat{Y}_t|}{\left(\frac{|Y_t| + |\hat{Y}_t|}{2}\right)}
+$$
+
+* Challenges: 
+  * Asymmetric
+  * Could divide by 0 
+
+5. AIC
+  * Likelihood based: AIC = -2log(L) +2K
+  * Error based: nlog(SSE/n)+2k
+6. BIC/SBC 
+  * Likelihood based: -2log(L) + klog(n)
+  * Error based:nlog(SSE/n)+klog(n) 
+  
+  
+# Exponential Smoothing models 
+
+* Time dependencies - observations at a certain time point depend on previous time points. 
+
+  $$NaiveModel = \hat{Y}_{t+h} = Y_t$$
+  $$AverageModel = \hat{Y}_{t+h} = \frac{1}{T} \sum_{t=1}^{T} Y_{t}$$
+* Exponential smoothing models (ESM) is essentially a weighted average not a simple average model. 
+  * Simple models with few parameters
+
+## Types of ESM models 
+
+* The following are common ESM models. **ESM are good for "one-step ahead" forecasting** and not further out. 
+  1. Single or Simple ESM
+  2. Linear/Holt (incorporates trend)
+  3. Holt-Winters (trend and seasonality)
+  4. Newer algorithms like ETS 
+  
+### Single Exponential Smoothing 
+
+* Has the Level Component
+* No seasonal or trend component captured. 
+* Better for short-term forecasts
+* Does not incorporate trend
+* SSE (Sum of squared errors) - Aims to minimize the SSE 
+  * The SSE is a measure of how well the forecast model (like exponential smoothing) fits the actual data
+  * The value of alpha that minimizes the one-step ahead forecast errors is considered the optimal value.
+* **1 Smoothing parameter = alpha (how much weight is given to the most recent observation)**
+* You don't need normality here to forecast, but you do need normality for a confidence interval. 
+* IF alpha = 0, then this simplifies to the average model. 
+
+  $$ForecastEquation: \hat{Y}_{t+1} = L_t$$ 
+  
+  $$LevelEquation: L_t  = \alpha Y_t + (1-\alpha)L_{t-1}$$
+
+### Linear Trend for Exponential Smoothing 
+
+* Two ways to incorporate trends in an exponential smoothing model
+  1. Linear Holt ESM 
+  2. Damped Linear Trend ESM 
+  
+1. Linear Holt
+  * Has 2 components: Level and trend 
+  * Has two smoothing components: alpha and beta 
+
+
+$$
+\ ForecastEquation: \hat{Y}_{t+1} = L_t + hT_t$$
+
+$$ \begin{align}
+\ Components: \\
+\ L_t  = \alpha Y_t + (1-\alpha)(L_{t-1}+T_{t-1}) \\
+\ T_t = \beta(L_t - L_{t-1}) +(1-\beta)T_{t-1}
+\end{align}
+$$
+
+2. Damped Linear Holt
+  * Has two components: Level and trend
+  * Has 3 smoothing parameters: Alpha, Beta, Phi (Phi dampens the model)
+  
+$$\hat{Y}_{t+h} = L_t + \sum_{i=1}^{h} \phi^i T_t$$
+
+\begin{align}
+L_t = \alpha Y_t + (1 - \alpha)(L_{t-1} + \phi T_{t-1}) \\
+
+T_t = \beta (L_t - L_{t-1}) + (1 - \beta)\phi T_{t-1}
+\end{align}
+
+
+
+### Seasonal Exponential Smoothing 
+
+* Seasonal models can be additive or multiplicative in the seasonal effect in the Exponential Smoothing Model.
+* Two seasonal models built on the linear holt model: 
+  1. Holt Winters Additive Exponential Smoothing (includes trend)
+  2. Holt Winters Multiplicative Exponential Smoothing (includes trend)
+* Holt-Winters has 3 components: Level, trend, and season 
+* 3 smoothing parameters (alpha, beta, gamma)
+
+
+$$\hat{Y}_{t+h} = (L_t + hT_t)S_{t-p+h}$$
+\begin{align}
+L_t = \alpha \left( \frac{Y_t}{S_{t-p}} \right) + (1 - \alpha)(L_{t-1} + T_{t-1}) \\
+
+T_t = \beta (L_t - L_{t-1}) + (1 - \beta) T_{t-1} \\
+
+Multiplicative: S_t = \gamma \left( \frac{Y_t}{(L_{t-1} + T_{t-1})} \right) + (1 - \gamma) S_{t-p} \\
+
+Additive: S_t = \gamma \left({Y_t} -{L_{t-1} - T_{t-1}} \right) + (1 - \gamma) S_{t-p} \\
+\end{align}
+
+
+### ESM Model Selection
+
+* ETS can also automatically select best model (based on AICc criterion in the fpp3 library)
+  * For “Error”, the choices are Additive (A) or Multiplicative (M)
+  * For “Trend”, the choices are None (N), Additive (A), Additive Damped (Ad)
+  * For “Seasonal”, the choices are None (N), Additive (A), Multiplicative (M)
+* You can choose which one you want, OR you can let the computer choose
+* Damping in restricted in the fable package - 0.8 < φ <0.98
+
+
+
+# ARIMA Background 
+
+<img src="C:/Users/agbea/OneDrive/MSA_folder/Fall/Fall1_503/Timeseries/ARIMA_Model_Path.png" width="800" />
+
+* ARIMA stands for 
+  * AR - Auto Regressive 
+  * I - Integrated 
+  * MA - Moving Averages
+* Selecting the best model is an iterative process
+* Signals in an ARIMA
+  * Trend (visual)
+  * Seasonality (visual)
+  * Correlation structures (look at correlation plots)
+  * We will need to take care of the functional form or visible patterns (for example trend and/or seasonality) and any random walks before we can model the data
+
+* AR (AutoRegressive): The model uses past values of the target variable to predict future values.
+* I (Integrated): This refers to differencing the data to make it stationary, i.e., removing trends or seasonality.
+* MA (Moving Average): The model uses past forecast errors to improve the accuracy of predictions.
+
+## NO Season and NO Trend 
+
+* Simple starting point of no season and no trend.
+* To model AR and MA terms we MUST have stationarity first. 
+  * There needs to be no visible trend and no visible seasonality. 
+  * This also means removing random walks, which may not be visible without a test. 
+* A time series is said to be stationary if its fundamental statistical characteristics (such as mean, variance, and autocorrelation) are constant over time.
+  * This concept is important because many statistical models assume stationarity, and non-stationary time series often need to be transformed to become stationary before they can be properly analyzed.
+  
+### Random Walks 
+
+* Random Walk - The next value of Y only depends on the previous value (all other information can be forgotten)
+
+$$ Random Walk: Y_t = Y_{t-1} + \varepsilon_t$$
+* Patterns may exist in the differences; therefore, if a random walk exists, need to take difference of series.
+
+$$General Model: Y_t - Y_{t-1} = \varepsilon_t$$
+
+* To know if there is a Random Walk, perform the unit root test. 
+
+* Two unit root tests will be discussed in this class: 
+  1. Augmented Dickey-Fuller Unit Root Test
+    * Null: There exists a unit root (random walk)
+    * Alt: The series is stationary
+  2. **KPSS**
+    * **Null: Stationary**
+    * **Alt: Has a random walk**
+* Note: different unit root tests, have different null and alternative hypotheses!
+
+* If raw data is stationary, then model the terms. If not stationary, take differences (up to two differences)
+
+* Don't over-difference. Over differencing introduces more dependence on error terms in your
+model (creation of moving average terms that don’t really exist).
+
+
+## Dependencies 
+
+* A time series is typically analyzed with an assumption that observations have a potential relationship across time (and sometimes space).
+
+### Autocorrelation 
+
+* Autocorrelation is the correlation between two sets of observations, from the same series, that are separated by k points in time.
+
+* Autocorrelation Function (ACF) - a tool used in time series analysis to measure the correlation between values in the series at different time lags. In simple terms, it shows how the current value of the series is related to its past values.
+
+$$\rho_k = Corr(Y_t, Y_{t-k})$$
+
+### Partial Autocorrelation 
+
+* Partial autocorrelations are conditional correlations.
+  * It is conditional on removing points in between.
+  * The partial autocorrelation functions tries to measure the direct relationship between two sets of observations, without the influence of other sets of time in between.
+  
+
+$$
+Y_t = \beta_0 + \phi_1 Y_{t-1} + \phi_2 Y_{t-2} + \dots + \phi_k Y_{t-k} + e_t
+$$
+
+$\phi$= represents the direct effect of $Y_{t-1}$ on $Y_{t}$ controlling for other lagged values. 
+
+
+## Using Correlation Functions in ARIMA Modeling 
+
+* Note random walks will affect the correlation plots. 
+* Goal - remove correlation signals and achieve stationarity.
+
+### AR and correlation plots
+
+* AR Model: 
+$$
+Y_t = \omega + \phi_1 Y_{t-1} + \phi_2 Y_{t-2} + \dots + \phi_p Y_{t-p} + e_t
+$$
+
+* Components:
+  * \( \omega \) is the intercept term.
+  * \( \phi_1, \phi_2, \dots, \phi_p \) are the coefficients for each lag up to \( p \).
+  * \( e_t \) is the error term at time \( t \).
+
+  * Interpretation:
+  This model suggests that the current value of the series, \( Y_t \), can be predicted by a linear combination of its previous \( p \) values, accounting for a random error term \( e_t \). Each coefficient \( \phi \) measures the influence of a corresponding lag on the current value.
+  * If $\phi_1$ = 1, then Random Walk and NOT Autoregressive model    
+  * If $\phi_1$ > 1, then today depends on tomorrow (doesn’t really make sense)
+  * For AR Models to be stationary, we need | $\phi_1$ + $\phi_p$| < 1, this prevents shocks from having a lasting impact. 
+* For autoregressive, we look at spikes in the PACF to term the number value of AR(p)
+ * PACF plot: Significant spike at lag 1, then cuts off → Suggests an AR(1) model. 
+ * ACF plot: Gradual decay, no sharp cutoffs → Consistent with an AR process.
+  
+* ACF: 
+  * The ACF decreases exponentially as the number of lags increases.
+  * The ACF should show a gradual decline (or exponential decay) for an AR process.
+  * If the ACF cuts off sharply instead of decaying, you might need to consider a moving average (MA) process rather than AR.
+  
+* PACF: 
+  * The PACF has a significant spike at the # of lags, followed by nothing after.
+  * The number of significant spikes in the PACF (before it cuts off) suggests the number of AR terms (𝑝).
+
+
+  
+### MA and correlation plots 
+
+* You can also forecast a series based solely on the past **error values**.
+* Formula for Moving Averages (q past errors): 
+\[
+Y_t = \omega + e_t + \theta_1 e_{t-1} + \theta_2 e_{t-2} + \dots + \theta_q e_{t-q}
+\]
+
+* PACF plot: The PACF decreases exponentially as the number of lags increases.
+* ACF plot: The ACF for an MA(q) has significant spikes at lags up to lag q
+
+### White Noise
+
+* Time series  = Signal + Noise
+  * If we are successful in removing all “correlation” signals, we are left with independent errors.
+* White Noise: 
+  * Errors follow a Normal distribution (or bell-shaped) with mean zero and positive
+  * Constant variance 
+  * All observations are independent of each other
+* Reading ACF and PACF when there is white noise
+  * The autocorrelation and partial autocorrelation functions of the residuals from these models have a value close to zero at every time point (should NOT see any significant spikes).
+* Two ways to check if white noise has been achieved: 
+  1. Look at the PACF and ACF function plots 
+  2. Ljung Box Test:
+    * (Null: No significant autocorrelation 
+    * Alternative: significant autocorrelation
+    * The Ljung-Box test may be applied to the original data or to the residuals after fitting a model.
+
+
+## ARIMA 
+
+* Any AR(p) model can be rewritten as an MA(∞).
+* If the MA(q) model is invertible, then this MA(q) model can be rewritten as an AR(∞).
+* There is nothing to limit both an AR process and an MA process to be in the
+model simultaneously.
+* These “mixed” models are typically used to help reduce the number of
+parameters needed for good estimation in the model.
+* Formula for ARMA: 
+  * p indicates the number of autoregressive terms (2)
+  * q represents the number of moving average terms (3)
+  
+$$
+Y_t = \omega + \phi_1 Y_{t-1} + \phi_2 Y_{t-2} + \theta_1 e_{t-1} + \theta_2 e_{t-2} + \theta_3 e_{t-3} + e_t
+$$
+
+* We tend to look for “spikes” to help us “guess” best model...spikes in ACF
+would potentially indicate MA terms and spikes in the PACF would potentially indicate AR terms
+
+
+## What to do when there is TREND? 
+
+1. Stochastic: Take the difference (remove the random walk with drift)
+2. Deterministic (ARIMAX): Run a linear regression
+
+### Random walk with drift
+
+* No trend in a random walk 
+* Trend is captured in a random walk with drift
+  * Omega is a constant term that shifts the drift up or down overtime (captures the trend)
+* Take the differences (first or second to remove the random walk with drift)
+* In ARIMA models, a trend is captured by including a constant term, which is often referred to as the drift -- ARIMA(y ~ 1 + pdq(p,d,q))
+
+$$ Random Walk with Drift: Y_t = \omega  + Y_{t-1} + \varepsilon_t$$
+
+### ARIMAX
+
+* If there is trend, you could take the differences or fit a linear regression. 
+* Fitting a linear regression to capture the trend is called an ARIMAX
+
+* How do you decide?
+  * Can use AIC, AICc, BIC on training data
+  * See which one follows the data the best (on training or validation data)
+  * Can use MAPE, MAE on validation data
+  * Once you decide on a model AND you are completely done with the modeling
+phase, you should combine your training and validation and update the
+parameter values (keep the EXACT same model!!) before comparing it to the
+test data
+
+* With trend: 
+  * The Random Walk with drift will have a wider confidence interval (very
+uncertain where it will be going)
+  * Linear model assumes a constant trend (RW with drift does not)

@@ -1,0 +1,268 @@
+---
+title: "Logistics_Summary"
+author: "Alison Bean de Hz"
+date: "2024-09-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# Understanding regressions 
+
+* Regression is modeling the expected (mean/average) response conditional on the predictors
+* For a binary (0/1) response, the expected value is just the probability of the event
+* Why can't we do OLS:
+  1. Probabilities are bounded between 0 and 1, and linear models are not bounded. 
+  2. Because there is a non-linear relationship between the target and the logged odds. OLS assumes that the relationship between the dependent and independent variables is linear, which is not the case. The S shape of the logistic regression curve. The rate of change of the probability varies as the X’s vary.
+  3. OLS properities do not hold. 
+    * The errors are normally distributed witha mean of zero is not true with logistic regression 
+    * The errors have constant variance is also not true with logistic regression. 
+    * Logistic Regressions follow the binomial distribution
+
+## Logit Link Transformation 
+
+* To create a linear model, a link function (logit) is applied to the probabilities.
+* The relationship between the parameters and the logits are linear.
+* Logits are unbounded. 
+
+## Odds ratios from the logits 
+
+* e^(coefficient) = Odds 
+* 100 * (Odds - 1) = % 
+* To double the odds = log(2) / coefficient 
+
+## Maximum Likelihood estimation & Likelihood Ratio Tests
+
+* In logistic regression, estimates are obtained via maximum likelihood  estimation (MLE)
+* Likelihood estimation provides a basis for hypothesis testing.
+* Likelihood Ratio Test (LRT) compares these FULL and REDUCED models.
+  * FULL – Bigger of the two models you are comparing.
+  * REDUCED – Smaller, nested model of the two.
+  * Null: Adding a specific variable does not provide more information 
+  * Alt: Adding a specific variable provides more information. 
+* For continuous variables to be in the model, there needs to be linear relationship between X and Y. To test the assumption perform a general additive model (GAM). If the line is straight and the EDF is around 1, then it passes the linearity test. GAMs use splines 
+  * ID the assumptions for the GAMs fail, 
+    1. Use GAM logistic model instead with more limited interpretation on variables that break assumption
+  2. Bin the continuous variables and no longer have that problem. 
+  
+
+# Data Considerations 
+
+## Rare events
+
+* Rare event modeling is dealing with having a target that is rare (5% of less of the data)
+* Solutions to rare events include: 
+  1. Oversampling (creating more instances of the event)
+    * Duplicate current event cases in training set to balance better with non-event cases.
+    * Keep test set as original population proportion.
+  2. Undersampling (taking less of the non-event)
+    * Randomly sample current non-event cases to keep in the training set to balance with event cases.
+    * Keep test set as original population proportion.
+* By over or under sampling, you have introduced bias into the data. You need to correct for that. 
+  * Weighted Observations: Most common solution
+    * Instead of adjusting the model after it is built, weighting observations adjusts while the model is being built.
+    * Uses weighted MLE instead – each observation has potentially different weight to the MLE calculation.
+  * Adjust the intercept: Only for small samples, and only when you know the model is correct (not really used in real-world)
+
+## Missing Values 
+
+1. Delete: If a majority of your data is missing, then consider deleting the variable all together.
+2. If categorical - make a "missing" category
+3. If continuous - simple mean, or predictive modeling 
+
+* Be careful about multicollinearity. 
+
+## Convergence problems
+
+* Complete linear separation occurs when some combination of the predictors
+perfectly predict every outcome
+
+* Quasi-complete separation occurs when the outcome can be perfectly
+predicted for only a subset of the data
+
+* Possible solultions to separation: 
+  * Collapse the categories of the predictor variable to eliminate the 0 cell count.
+  * Penalized maximum likelihood.
+  * Eliminate the category altogether – probably not reasonable since the
+category seems important!
+  * Add a very small constant to the cell counts.
+  
+  
+# Model Selection 
+
+* Stepwise and backwards are a normal place to start, and then forward selection to look for interaction terms. 
+
+* AIC, BIC, or p-value selection 
+
+* The saturated model fits the data perfectly, but isn’t really a useful summary.
+* Deviance is a measure of how far our fitted model is from the saturated model
+– essentially our “error.”
+* Logistic regression minimizes the sum of squared deviances!
+
+* Influence Statistics: 
+  * DIFDEV: Measures change in deviance with deletion of the observation.
+  * DFBETAS: Measure standardized change in each parameter estimate with deletion of observation.
+  * Cook’s D: Measures the overall impact to the coefficients in the model.
+    
+    
+* Deviance/Likelihood Measures
+  * Generalized / Nagelkerke $R^2$
+    * Higher values indicate “better” model
+    * Unlike linear regression, there is no interpretation on these.
+
+
+# Assessing Predictive Power
+  
+
+-   There are two main ways to assess the predictive power
+    1.  Probability-based metrics
+    2.  Classification-based metrics: based on whether the predicted probability exceeds some threshold
+-   Probability measures include:
+    -   Coefficient of determination
+    -   Concordance, discordances, and ties
+-   Classification measures include:
+    -   Sensitivity vs. Specificity
+        -   Area under te ROC curve
+        -   KS Statistic
+    -   Precision vs. Recall
+        -   Lift Chart
+        -   Gain Chart
+    -   Accuracy vs. Error
+
+## Classification: Sensitivity vs. Specificity
+
+<img src="C:/Users/agbea/OneDrive/MSA_folder/Fall/Fall1_503/Logistic/Assessing_Predictions.png" width="800"/>
+
+-   Sensitivity: True Positive Rate - % of actual 1s are classified as 1s
+
+$$ TPR = TruePositive / (TruePositive + FalseNegative)$$ 
+
+- Specificity: True Negative Rate - % of actual 0s are classified as 0s
+
+$$ TNR = TrueNegative/ (TrueNegative + FalsePositives)$$
+
+-   1 - Specificity = False Positive Rate
+
+$$ FalsePositiveRate = (FalsePositives) /(TrueNegatives + False Positives) $$
+
+### Cut-offs
+
+-   Always consider the cost of false positives and false negatives when doing classification.
+
+-   When NOT considering costs, many different techniques to “optimal” cut-off.
+
+    1.  Youden's index : J = (sensitivity + specificity) - 1
+    2.  K-S Statistic
+
+-   ROC Curve - plots the true positive rate (sensitivity) and the false positive rate (1-specificity)
+    -   You want high sensitivity and high specificity.
+    -   On the graph, high sensitivity vs. low false positive rate
+    -   Area under the ROC curve = % concordance + 1/2 (%Tied)
+        -   This is the c-statistic from the concordance section
+    -   Optimal point on the graph is Youden's Index
+
+-   K-S Statistic (Kolmogorov-Smirnov)
+    -   Popular in banking and finance
+    -   K-S D-statistics = Youden's Index
+        -   max(sensitivity + specificity - 1)
+        -   maximum difference between TPR and FPR
+    -   K-S Graph has two cumulative distribution functions
+        -   G(c) = cumulative proportion of true positives
+        -   F(c) = cumulative proportion of false positives
+        -   KS Statistic = maximum difference between the two CDFs
+        -   KS Cutoff = the cutoff (threshold) value of the classifier where the K-S statistic is maximized.
+    -   The K-S statistic measures how well the model differentiates between positive and negative instances. A higher K-S statistic indicates better separation, meaning the model does a good job of assigning higher probabilities to positive cases and lower probabilities to negative cases.
+
+### Recall and Precision
+
+-   Recall = Sensitivity = True Positive Rate - % of actual 1s are classified as 1s
+
+-   Precision = Out of the 1s predicted, how many were actually 1s.
+
+-   Optimal cutoff when looking at precision:
+    -   “Optimal” – precision and recall are weighed equally, so select cut-off that produces highest $F_1$ score.
+    -  $F_1$ DOES **NOT** TYPICALLY MATCH YOUDEN CUT-OFF
+
+    $$F_1 = 2(Precision*Recall / Precision + Recall)$$
+    
+### Precision & Lift 
+
+$$ Lift = Positive Predicted Values / \pi_1$$
+
+* PPV (Positive Predictive Value or Precision) represents the proportion of true positive predictions in the top ranked group (such as the top X% of customers ranked by predicted probability).
+* π₁ represents the overall proportion of positives (e.g., the percentage of customers who respond in the entire population).
+* In practical terms, if your model has a lift of 2 for the top 10% of customers, it means that you’re twice as likely to find responders in that top 10% compared to randomly selecting 10% of your customers.
+* The top depth% of your customers, based on predicted probability, you get lift
+times as many responses compared to targeting a random sample of depth%
+of your customers.
+  * Trying to not just randomly select customers. Instead, it is breaking the data into depths. Example was groups of 10% intervals (buckets).
+  
+* Example interpretation: 
+  * Lift =  (precision / drawing at random) 
+  * In the top 10%, if you assumed all were 1s, then the model would be right 97.6% of the time. 
+  * However, if you randomly select homes, you'll probably only be right 41% of the time. 
+  * Lift = my model is 2.4 times more likely to identify bonus eligible homes when you look at the top 10% of our data. 
+  * You get 2.4 times more bonus eligible homes than if you randomly selected the data. 
+  * Our lift declines as we go down the buckets. The more observations you add in, the more likely your model is to be wrong. 
+  
+* Lift Curve / Response Rate Chart
+  * Real lift will bottom out at zero (real lift is bucket by bucket)
+  * Cumulative lift will bottom out at 1 (includes all the previous buckets)
+  * There is an upper bound on lift because the max response rate is 1. 
+  * You can compare lift in the same dataset, but be careful comparing across datasets.
+  
+* Capture rate = gains rate = Of all of the 1s in the dataset, what proportion of them exist in that bucket. 
+
+### Classification Closing
+
+* Classification is a decision that is extraneous to statistical modeling.
+* Although logistic regression tends to work well in classification, it is a
+probability model and does not output 1’s and 0’s.
+* Classification assumes cost for each individual is the same.
+  * Useful for groups.
+  * Careful about single observation decisions.
+
+# ORDINAL LOGISTIC REGRESSION
+
+* When the outcomes are ordered we can generalize the binary logistic
+regression model. 
+  * Ex: Disagree, Neutral, Agree
+  * EX: Tropical Depression, Tropical Storm, Category 1, 2, 3, 4, 5 Hurricanes
+  
+* Tree methods for modeling ordinal logistic regression models: 
+  1. **Cumulative Logit Model**: Easy to implement and interpret!
+  2. Adjacent Categories Model
+  3. Continuation Ratio Model
+
+## Cumulative Logit Model
+
+* Instead of modeling the typical logit, we will model the cumulative logits.
+  * If an ordinal variable has m levels with probabilities, then the cumulative logits are: p1, p2, ... pm-1. (you'll have one less model than there are categories -- kind of like a dummy having one less category) 
+  * m-1 Binary Logistic Regressions!
+
+* Output will have the same coefficients and different intercepts
+  * Assumption is that they are parallel lines, but we must test is the slopes are actually parallel. 
+
+* We will use the Brant or score test to check and see if the slopes are the same.
+    * Null: Slopes are equal (We want high p-values -- do not want to reject)
+    * Alternative: Slopes are not equal (we don't know which slopes, but that at least one pair of slopes will fail)
+    * Omnibus test is a global test to see if any pair does not pass. Then it has each pair to show which pair failed the test. 
+
+* If the brant test fails: 
+  1. Partial Proportional Odds Model - Some of the variables fail assumptions
+  2. Multinomial Logistic Regression - All variables fail assumptions
+  
+### Interpretation example: 
+
+* The interpretations can only show general direction. 
+  * You predict the direction of the outcome, not the specific outcome like we did for just binary targets.
+* Males have 65.35% lower expected odds of being in a higher ethical category as compared to non-males.
+* Business school students have 52.24% lower expected odds of being in a
+higher ethical category as compared to students not in the business school.
+
+
+
